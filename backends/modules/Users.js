@@ -1,28 +1,30 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-
-
-
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: [true, 'Please enter a username'],
-    unique: true
+    unique: true,
+    trim: true,
   },
   email: {
     type: String,
     required: [true, 'Please enter an email'],
-    unique: true
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/\S+@\S+\.\S+/, 'Please enter a valid email'],
   },
   password: {
     type: String,
     required: [true, 'Please enter a password'],
-    minlength: 6
+    minlength: 6,
+    select: false, // Do not return password field by default
   },
   isAdmin: {
     type: Boolean,
-    default: false
+    default: false,
   }
 }, { timestamps: true });
 
@@ -39,5 +41,12 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Remove sensitive info from output
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  delete obj.__v;
+  return obj;
+};
 
+module.exports = mongoose.model('User', userSchema);
